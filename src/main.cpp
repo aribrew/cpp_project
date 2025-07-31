@@ -1,11 +1,8 @@
-#include <iostream>
-
-using std::cerr;
-using std::cout;
-using std::endl;
+#include <Terminal.hpp>
 
 
 int main ()
 {
+    cout << "Hello world!\n";
     return 0;
 }

@@ -1,30 +1,37 @@
 
+
+# ${1}: Package/s
+define INSTALL
+$(shell sudo apt install -y ${1})
+endef
+
+
 # Locate ALL source files below ${1}
 # ${1}: SRC path
 define FIND_ALL_SRCS
-$(strip $(call FIND_EXCLUDING,"*.c","main.c",${1}) \ 
+$(strip $(call FIND_EXCLUDING,"*.c","main.c",${1})$\
 		$(call FIND_EXCLUDING,"*.cpp","main.cpp",${1}))
 endef
 
 
 # ${1}: Path where local dependencies are
 define FIND_ALL_DEPS_SRCS
-$(strip $(call FIND,"*.c",${1}) \ 
+$(strip $(call FIND,"*.c",${1})$\
 		$(call FIND,"*.cpp",${1}))
 endef
 
 
 # Locate ALL header files below ${1}
-# ${1}: SRC path
+# ${1}: Headers path
 define FIND_ALL_HEADERS
-$(strip $(call FIND,"*.h",${1}) \ 
+$(strip $(call FIND,"*.h",${1})$\
 		$(call FIND,"*.hpp",${1}))
 endef
 
 
-# ${1}: Path where local dependencies are
+# ${1}: Headers where local dependencies are
 define FIND_ALL_DEPS_HEADERS
-$(strip $(call FIND,"*.h",${1}) \ 
+$(strip $(call FIND,"*.h",${1})$\
 		$(call FIND,"*.hpp",${1}))
 endef
 
