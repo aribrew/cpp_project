@@ -1,4 +1,4 @@
-
+# Requires: Functions.mk
 
 # ${1}: Package/s
 define INSTALL
@@ -48,9 +48,17 @@ $(strip $(foreach lib,${1},-l${lib}))
 endef
 
 
+# ${1}: Source files path
+# ${2}: Source files folder
+# ${3}: Objs path
+define OBJS_FROM
+$(foreach src,${1},$(call SRC2OBJ,${2},${3},${src}))
+endef
+
+
 # Obtains the paths of all provided files.
 # The sort function also removes duplicates.
-#${1}: File list
+# ${1}: File list
 define PATHS_OF
 $(sort $(foreach file,${1},$(dir ${file})))
 endef
