@@ -191,28 +191,34 @@ OBJS_PATH						:= ${OBJS_PATH}/${SYSTEM}
 
 # If MAIN has been set
 ifneq (${MAIN_SRC},)
-	EXEC						:= ${BUILD_PATH}
+	EXEC						:= ${BUILD_PATH}/
 	
 	ifeq (${PROJECT_NAME},)
 		# The executable will be named as ${MAIN}
-		EXEC					+= /$(basename $(notdir ${MAIN_SRC}))
+		EXEC					+= $(basename $(notdir ${MAIN_SRC}))
 	else
 		# The executable will be named as ${PROJECT_NAME}
-		EXEC					:= ${BUILD_PATH}/${PROJECT_NAME}
+		EXEC					+= ${PROJECT_NAME}
 	endif
 
 	ifeq (${SYSTEM},windows)
 		# Name the excutable to be a Windows executable
 		EXEC					+= .exe
 	endif
+
+	EXEC						:= $(subst / ,/,${EXEC})
 else
 	# If we have no MAIN, we need a PROJECT_NAME for the binary
     ifneq (${PROJECT_NAME},)
+    	LIBRARY 				:= ${BUILD_PATH}/
+    	
     	ifeq (${IS_DYNAMIC_LIBRARY},0)
-    		LIBRARY				:= lib${PROJECT_NAME}.a
+    		LIBRARY				+= lib${PROJECT_NAME}.a
     	else
-    		LIBRARY				:= lib${PROJECT_NAME}.so
+    		LIBRARY				+= lib${PROJECT_NAME}.so
     	endif
+
+    	LIBRARY					:= $(subst / ,/,${LIBRARY})
     else
     	$(info If you have no MAIN_SRC you MUST specify a PROJECT_NAME)
     	exit 1
@@ -288,7 +294,7 @@ endif
 
 
 # Builds the library
-${BUILD_PATH}/${LIBRARY}: ${BUILD_PATH} ${OBJS} ${MORE_OBJS}
+${LIBRARY}: ${BUILD_PATH} ${OBJS} ${MORE_OBJS}
 	${AR} ${AR_FLAGS} $@ ${OBJS} ${MORE_OBJS}
 
 
