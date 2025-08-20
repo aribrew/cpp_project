@@ -2,14 +2,14 @@
 # If defined, the resulting binary will be named this.
 # Otherwise, it will be named as ${MAIN}.
 # So, if we have no main, THIS MUST BE SET.
-PROJECT_NAME					:= 
+PROJECT_NAME					:= HelloWorld
 
 # If set, this path will be seached for source files (excluding MAIN)
 # 
 # This is intended for the case we have a src folder with all the sources
 # below it. The object paths for each one will have this folder
 # (for example 'src') replaced by ${OBJS_PATH}.
-SRC_PATH 						:= 
+SRC_PATH 						:= src
 
 # Also you can add here more source files to build.
 #
@@ -20,7 +20,7 @@ SRC_PATH 						:=
 MORE_SRCS 						:= 
 
 # The main source file, if any. If none, we assume this is a library.
-MAIN_SRC						:= 
+MAIN_SRC						:= ${SRC_PATH}/main.cpp
 
 # If 1, and if we have no main, a dynamic library will be built
 IS_DYNAMIC_LIBRARY				:= 0
