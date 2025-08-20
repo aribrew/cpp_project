@@ -1,199 +1,380 @@
-ifndef NO_MAIN
-	include Project.mk
-endif
 
-EXEC								:= ${PROJECT_NAME}
+# If defined, the resulting binary will be named this.
+# Otherwise, it will be named as ${MAIN}.
+# So, if we have no main, THIS MUST BE SET.
+PROJECT_NAME					:= 
 
-ifneq (${WINDIR},)
-	SYSTEM							:= windows
-	EXEC							:= ${EXEC}.exe
-else
-	UNAME							:= $(shell uname)
+# If set, this path will be seached for source files (excluding MAIN)
+# 
+# This is intended for the case we have a src folder with all the sources
+# below it. The object paths for each one will have this folder
+# (for example 'src') replaced by ${OBJS_PATH}.
+SRC_PATH 						:= 
 
-	ifeq (${UNAME},Darwin)
-		SYSTEM						:= macos
-	else ifeq (${UNAME},Linux)
-		SYSTEM						:= linux
-	else
-		SYSTEM						:= other
-	endif
-endif
+# Also you can add here more source files to build.
+#
+# This is intended for the case we have a bunch of source files,
+# with or without sub-folders, and want to add them to the build.
+#
+# The object paths of each one will be ${OBJS_PATH}/{SRCS.entry}
+MORE_SRCS 						:= 
 
+# The main source file, if any. If none, we assume this is a library.
+MAIN_SRC						:= 
 
-ifndef NO_MAIN
-	SRC								:= src
-else
-	SRC								:= .
-endif
+# If 1, and if we have no main, a dynamic library will be built
+IS_DYNAMIC_LIBRARY				:= 0
 
-DEPS								:= deps
-BUILD								:= build
-OBJ									:= obj
+# Dependencies (Must have their own Makefile)
+DEPS							:= 
 
-OBJS_PATH							:= ${OBJ}/${SYSTEM}
-DEPS_OBJS_PATH						:= ${DEPS}/${OBJ}/${SYSTEM}
-BUILD_PATH							:= ${BUILD}/${SYSTEM}
+# Header paths to include in headers search
+INCLUDE							:= . ..
 
-EXEC								:= ${BUILD}/${SYSTEM}/${EXEC}
+# Libs paths to include in libraries search
+LIBS_PATHS 						:= 
 
+# Dynamic libraries to link
+LIBS							:= 
 
-ifndef NO_MAIN
-	include mk/Commands.mk
-	include mk/Functions.mk
-	include mk/Helpers.mk
-else
-	include ../mk/Commands.mk
-	include ../mk/Functions.mk
-	include ../mk/Helpers.mk
-endif
+# Where to build things
+BUILD_PATH						:= build
+OBJS_PATH						:= obj
 
-
-ifndef NO_MAIN
-	C_MAIN					:= $(call FIND,"main.c",${SRC})
-	CPP_MAIN				:= $(call FIND,"main.cpp",${SRC})
-
-	ifneq (${C_MAIN},)
-		MAIN				:= ${C_MAIN}
-	else
-		MAIN				:= ${CPP_MAIN}
-	endif
-
-	MAIN_FILE				:= $(notdir ${MAIN})
-	MAIN_OBJ				:= ${OBJS_PATH}/$(call SRC2OBJ,${MAIN_FILE})
-endif
-
-SRCS					:= $(call FIND_ALL_SRCS,${SRC})
-HEADERS					:= $(call FIND_ALL_HEADERS,${SRC})
-OBJS					:= $(foreach src,${SRCS},$(call SRC2OBJ,${src}))
-INCLUDE_PATHS			:= $(call PATHS_OF,${HEADERS})
-
-INCLUDE					:= $(call INCLUDE_FLAGS_FROM,${INCLUDE_PATHS})
-LIBS					:= $(call LIB_FLAGS_FROM,${LIBS})
-
-ifndef NO_DEPS
-DEPS_SRCS				:= $(call FIND_ALL_DEPS_SRCS,deps)
-DEPS_HEADERS			:= $(call FIND_ALL_DEPS_HEADERS,deps)
-DEPS_INCLUDE_PATHS		:= $(call PATHS_OF,${DEPS_HEADERS})
-
-DEPS_INCLUDE			:= $(call INCLUDE_FLAGS_FROM,${DEPS_INCLUDE_PATHS})
-DEPS_OBJS				:= $(call FIND,"*.o",deps/${SYSTEM})
-endif
+# User flags for ar and both the C and the C++ compiler
+C_FLAGS							:= 
+CXX_FLAGS						:=
+AR_FLAGS						:=
 
 
-ifeq (${C},)
-	C								:= clang
-endif
 
-ifeq (${CXX},)
-	CXX								:= clang++
-endif
 
-GLOBAL_FLAGS						:= -Wall -pedantic
 
-CFLAGS								+= ${GLOBAL_FLAGS}
-CXXFLAGS							+= ${GLOBAL_FLAGS}
+
+
+
+##############################################################################
+############################ D A N G E R  Z O N E ############################
+##############################################################################
+AR								:= ar
+C								:= gcc
+CXX								:= g++
+
+
+# Global ar flags
+AR_FLAGS						+= -crs
+
+# Global C/C++ flags
+C_CXX_FLAGS						:= -pedantic
+C_CXX_FLAGS 					+= -Wall
 
 ifdef $(RELEASE)
-	CFLAGS							+= -O3
-	CXXFLAGS						+= -O3
+	C_CXX_FLAGS 				+= -O3
 else
-	CFLAGS							+= -g
-	CXXFLAGS						+= -g
+	C_CXX_FLAGS 				+= -g
 endif
 
 
 
 
-.PHONY: all cleandeps deps clean info run
+############################### Functions ####################################
+# ${1}: What to build
+# ${2}: Resulting file
+# ${3}: Compiler
+# ${4}: Flags
+define BUILD
+${3} ${1} -o ${2} ${4}
+endef
 
 
-ifndef NO_MAIN
-all: ${OBJS_PATH} ${BUILD_PATH} ${EXEC}
+# ${1}: What to find
+# ${2}: Where
+define FIND
+$(shell find -L ${2}/** -type f -name ${1})
+endef
+
+
+# ${1}: What to find
+# ${2}: Where
+# ${3}: Excluding
+define FIND_EXCLUDING
+$(shell find -L ${2}/** -type f -name ${1} -not -name ${3})
+endef
+
+
+# ${1}: A list of paths with headers
+define INCLUDE_FLAGS_FROM
+$(strip $(foreach path,${1},-I ${path}))
+endef
+
+
+# ${1}: A list of dynamic library names
+define LIBS_FLAGS_FROM
+$(strip $(foreach lib,${1},-l${lib}))
+endef
+
+
+# ${1}: A list of paths with libraries
+define LIBS_PATHS_FLAGS_FROM
+$(strip $(foreach path,${1},-L ${path}))
+endef
+
+
+# Obtains the paths of all provided files.
+# The sort function also removes duplicates.
+# ${1}: File list
+define PATHS_OF
+$(sort $(foreach file,${1},$(dir ${file})))
+endef
+
+
+# Obtains the .o file path from the given source file
+# ${1}: Source file
+define SRC2OBJ
+$(subst .c,.o,$(subst .cpp,.o,${1}))
+endef
+
+
+# Obtains a list of all folders below this one
+# ${1}: Path
+define TREE
+$(shell find ${1}/** -type d)
+endef
+##############################################################################
+
+
+################################## Helpers ###################################
+# Locate ALL source files below ${1} (excluding ${MAIN_SRC}).
+# If MAIN_SRC is defined, it filename will be ommited from the search.
+# If not, the standard main.c and main.cpp will be checked when filtering.
+#
+# ${1}: The path where the source files are located
+ifneq (${MAIN},)
+define FIND_SOURCES
+$(strip $(call FIND_EXCLUDING,"*.c",${1},${MAIN_SRC})$\
+		$(call FIND_EXCLUDING,"*.cpp",${1},${MAIN_SRC}))
+endef
+
 else
-all: ${OBJS_PATH} ${BUILD_PATH}
+
+define FIND_SOURCES
+$(strip $(call FIND_EXCLUDING,"*.c",${1},"main.c")$\
+		$(call FIND_EXCLUDING,"*.cpp",${1},"main.cpp"))
+endef
 endif
+
+# ${1}: Path where local dependencies are
+define FIND_DEPS_SOURCES
+$(strip $(call FIND,"*.c",${1})$\
+		$(call FIND,"*.cpp",${1}))
+endef
+
+
+# ${1}: Source files list
+define OBJSFROM
+$(foreach src,${1},$(call SRC2OBJ,${src}))
+endef
+##############################################################################
+
+
+
+
+ifneq (${WINDIR},)
+	SYSTEM						:= windows
+else
+	UNAME						:= $(shell uname)
+
+	ifeq (${UNAME},Darwin)
+		SYSTEM					:= macos
+	else ifeq (${UNAME},Linux)
+		SYSTEM					:= linux
+	else
+		SYSTEM					:= other
+	endif
+endif
+
+
+BUILD_PATH						:= ${BUILD_PATH}/${SYSTEM}
+OBJS_PATH						:= ${OBJS_PATH}/${SYSTEM}
+
+
+# If MAIN has been set
+ifneq (${MAIN},)
+	EXEC						:= ${BUILD_PATH}
+	
+	ifeq (${PROJECT_NAME},)
+		# The executable will be named as ${MAIN}
+		EXEC					+= /$(basename $(notdir ${MAIN_SRC}))
+	else
+		# The executable will be named as ${PROJECT_NAME}
+		EXEC					:= ${BUILD_PATH}/${PROJECT_NAME}
+	endif
+
+	ifeq (${SYSTEM},windows)
+		# Name the excutable to be a Windows executable
+		EXEC					+= .exe
+	endif
+else
+	# If we have no MAIN, we need a PROJECT_NAME for the binary
+    ifneq (${PROJECT_NAME},)
+    	ifeq (${IS_DYNAMIC_LIBRARY},0)
+    		LIBRARY				:= lib${PROJECT_NAME}.a
+    	else
+    		LIBRARY				:= lib${PROJECT_NAME}.so
+    	endif
+    else
+    	$(info If you have no MAIN you MUST specify a PROJECT_NAME)
+    	exit 1
+    endif
+endif
+
+
+ifneq (${MAIN_SRC},)
+	MAIN_OBJ					:= $(call SRC2OBJ,${MAIN_SRC})
+	MAIN_OBJ					:= ${OBJS_PATH}/$(notdir ${MAIN_SRC})
+endif
+
+ifneq (${SRC_PATH},)
+	SRCS						:= $(call FIND_SOURCES,${SRC_PATH})
+	OBJS						:= $(foreach o,${OBJS},$(subst ${SRC_PATH},${OBJS_PATH},${o}))
+endif
+
+ifneq (${MORE_SRCS},)
+	MORE_OBJS					:= $(call OBJSFROM,${MORE_SRCS})
+	MORE_OBJS					:= $(foreach o,${MORE_OBJS},${OBJS_PATH}/${o})
+endif
+
+INCLUDE_FLAGS					:= $(call INCLUDE_FLAGS_FROM,${INCLUDE})
+
+LINK_FLAGS						:= $(call LIBS_PATHS_FLAGS_FROM,${LIBS_PATHS})
+LINK_FLAGS						+= $(call LIBS_FLAGS_FROM,${LIBS})
+
+C_FLAGS 						:= ${C_CXX_FLAGS} ${C_FLAGS}
+CXX_FLAGS 						:= ${C_CXX_FLAGS} ${CXX_FLAGS}
+
+
+
+
+# All objetives, that aren't files, must have an entry here
+.PHONY: all clean info obj run
+
+
+# Special objetive. Always called when making.
+all: ${OBJS_PATH} ${BUILD_PATH} ${EXEC} ${LIBRARY}
 
 
 clean:
-	$(shell ${RMTREE} ${OBJ})
-	$(shell ${RMTREE} ${BUILD})
+	rm -rf $(dir ${BUILD_PATH})
+	rm -rf $(dir ${OBJS_PATH})
 
+ifneq (${EXEC},)
+	rm ${EXEC}
+endif
 
-cleandeps:
-	${MAKE} -C ${DEPS} clean
-
-
-deps:
-	${MAKE} -C ${DEPS}
-
-
-${BUILD_PATH}:
-	$(shell ${MKTREE} ${BUILD_PATH})
+ifneq (${LIBRARY},)
+	rm ${LIBRARY}
+endif
 
 
 ${OBJS_PATH}:
-	$(shell ${MKTREE} ${OBJS_PATH})
+	mkdir -p $@
 
 
-ifndef NO_MAIN
-# Builds the executable
-${EXEC}: ${OBJS} ${MAIN_OBJ}
-ifeq (${MAIN_FILE},main.c)
-	${C} ${DEPS_OBJS} ${OBJS} ${MAIN_OBJ} -o ${EXEC} ${LIBS} ${LDFLAGS}
+${BUILD_PATH}:
+	mkdir -p $@
+
+
+# Builds the MAIN_OBJ
+${MAIN_OBJ}: ${OBJS_PATH} ${MAIN_SRC}
+ifeq ($(suffix ${MAIN_SRC}),.c)
+	${C} -c ${MAIN_SRC} -o $@ ${INCLUDE_FLAGS} ${C_FLAGS}
 else
-	${CXX} ${DEPS_OBJS} ${OBJS} ${MAIN_OBJ} -o ${EXEC} ${LIBS} ${LDFLAGS}
+	${CXX} -c ${MAIN_SRC} -o $@ ${INCLUDE_FLAGS} ${CXX_FLAGS}
 endif
 
 
-# Builds the main object
-${MAIN_OBJ}: ${MAIN}
-ifeq (${MAIN_FILE},main.c)
-	${C} -c ${MAIN} -o ${MAIN_OBJ} ${DEPS_INCLUDE} ${INCLUDE} ${CFLAGS}
+# Builds the executable when building a program
+${EXEC}: ${BUILD_PATH} ${MAIN_OBJ} ${OBJS} ${MORE_OBJS}
+ifeq ($(suffix ${MAIN_SRC}),.c)
+	${C} ${OBJS} ${MORE_OBJS} ${MAIN_OBJ} $\
+		 -o $@ ${LINK_FLAGS} ${C_FLAGS}
 else
-	${CXX} -c ${MAIN} -o ${MAIN_OBJ} ${DEPS_INCLUDE} ${INCLUDE} ${CXXFLAGS}
+	${CXX} ${OBJS} ${MORE_OBJS} ${MAIN_OBJ} $\
+		   -o $@ ${LINK_FLAGS} ${CXX_FLAGS}
 endif
+
+
+# Builds the library
+${BUILD_PATH}/${LIBRARY}: ${BUILD_PATH} ${OBJS} ${MORE_OBJS}
+	${AR} ${AR_FLAGS} $@ ${OBJS} ${MORE_OBJS}
+
+
+ifneq (${SRC_PATH},)
+# Builds the .cpp source files below SRC_PATH
+${OBJS_PATH}/%.o: ${SRC_PATH}/%.c ${OBJS_PATH}
+	$(info DEBUG: ${C} -c $< -o $@)
+
+
+# Builds the .cpp source files below SRC_PATH
+${OBJS_PATH}/%.o: ${SRC_PATH}/%.cpp ${OBJS_PATH}
+	$(info DEBUG: ${CXX} -c $< -o $@ ${INCLUDE_FLAGS} ${CXX_FLAGS})
 endif
 
 
-# Builds all C files mirroring their folder tree
-${OBJS_PATH}/%.o: ${SRC}/%.c
-	$(shell ${MKTREE} $(dir $@))
-	${C} -c $< -o $@ ${DEPS_INCLUDE} ${INCLUDE} ${CFLAGS}
+# Builds the .c source files added in MORE_SRCS}
+${OBJS_PATH}/%.o: %.c ${OBJS_PATH}
+#	$(info DEBUG: ${C} -c $^ -o $@ ${INCLUDE_FLAGS} ${C_FLAGS})
+	${C} -c $< -o $@ ${INCLUDE_FLAGS} ${C_FLAGS}
 
 
-# Builds all CPP files mirroring their folder tree
-${OBJS_PATH}/%.o: ${SRC}/%.cpp
-	$(shell ${MKTREE} $(dir $@))
-	${CXX} -c $< -o $@ ${DEPS_INCLUDE} ${INCLUDE} ${CXXFLAGS}
+# Builds the .cpp source files added in MORE_SRCS}
+${OBJS_PATH}/%.o: %.cpp ${OBJS_PATH}
+#	$(info DEBUG: ${CXX} -c $^ -o $@ ${INCLUDE_FLAGS} ${CXX_FLAGS})
+	${CXX} -c $< -o $@ ${INCLUDE_FLAGS} ${CXX_FLAGS}
+
+# What to build
+/tmp/touched: # What is needed
+	# Steps to build
+	touch $@
 
 
+# A recommended objetive for checking vars (pardon, macros)
 info:
 	$(info PROJECT_NAME: ${PROJECT_NAME})
 	$(info EXEC: ${EXEC})
-	$(info SYSTEM: ${SYSTEM})
+	$(info LIBRARY: ${LIBRARY})
+	$(info SRC_PATH: ${SRC_PATH})
+	$(info OBJS_PATH: ${OBJS_PATH})
+	$(info BUILD_PATH: ${BUILD_PATH})
+	
+	$(info AR binary: ${AR})
+	$(info C compiler: ${C})
+	$(info C++ compiler: ${CXX})
+	
+	$(info C_FLAGS: ${C_FLAGS})
+	$(info CXX_FLAGS: ${CXX_FLAGS})
+	$(info AR_FLAGS: ${AR_FLAGS})
 
-ifndef NO_MAIN
-	$(info MAIN: ${MAIN})
-	$(info MAIN_FILE: ${MAIN_FILE})
+	$(info MAIN_SRC: ${MAIN_SRC})
 	$(info MAIN_OBJ: ${MAIN_OBJ})
-endif
+
 	$(info SRCS: ${SRCS})
-	$(info HEADERS: ${HEADERS})
 	$(info OBJS: ${OBJS})
-	$(info INCLUDED_PATHS: ${INCLUDE})
+
+	$(info MORE_SRCS: ${MORE_SRCS})
+	$(info MORE_OBJS: ${MORE_OBJS})
+
+	$(info INCLUDE: ${INCLUDE})
+	$(info INCLUDE_FLAGS: ${INCLUDE_FLAGS})
+
+	$(info LIBS_PATHS: ${LIBS_PATHS})
 	$(info LIBS: ${LIBS})
-
-ifndef NO_DEPS
-	$(info DEPS_SRCS: ${DEPS_SRCS})
-	$(info DEPS_HEADERS: ${DEPS_HEADERS})
-	$(info DEPS_INCLUDE: ${DEPS_INCLUDE})
-	$(info DEPS_OBJS: ${DEPS_OBJS})
-endif
-
+	
+	$(info LINK_FLAGS: ${LINK_FLAGS})
+	
+	$(info DEPS: ${DEPS})
 
 run:
-ifeq (${SYSTEM},windows)
+	chmod +x "${EXEC}"
 	${EXEC}
-else
-	./${EXEC}
-endif
+	
