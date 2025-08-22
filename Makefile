@@ -131,15 +131,15 @@ endef
 #
 # ${1}: The path where the source files are located
 ifneq (${MAIN},)
-	define FIND_SOURCES
+define FIND_SOURCES
 	$(strip $(call FIND_EXCLUDING,"*.c",${1},${MAIN_SRC})$\
 			$(call FIND_EXCLUDING,"*.cpp",${1},${MAIN_SRC}))
-	endef
+endef
 else
-	define FIND_SOURCES
+define FIND_SOURCES
 	$(strip $(call FIND_EXCLUDING,"*.c",${1},"main.c")$\
 			$(call FIND_EXCLUDING,"*.cpp",${1},"main.cpp"))
-	endef
+endef
 endif
 
 # ${1}: Path where local dependencies are
@@ -212,8 +212,8 @@ else
     	# If we have a PROJECT_NAME and are building a library,
     	# the PROJECT_NAME must be named libwhatever.so or
     	# libwhatever.a.
-    	ifneq ($(filter %.so),${PROJECT_NAME})
-    		ifneq ($(filter %.a),${PROJECT_NAME})
+    	ifneq ($(filter %.so,${PROJECT_NAME}),)
+    		ifneq ($(filter %.a,${PROJECT_NAME}),)
     			$(call ERROR__NO_MAIN_AND_NO_LIB)
     			exit 1
     		endif
