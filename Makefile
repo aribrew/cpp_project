@@ -1,51 +1,4 @@
-
-# If defined, the resulting binary will be named this.
-# Otherwise, it will be named as ${MAIN}.
-# So, if we have no main, THIS MUST BE SET.
-PROJECT_NAME					:= 
-
-# If set, this path will be seached for source files (excluding MAIN)
-# 
-# This is intended for the case we have a src folder with all the sources
-# below it. The object paths for each one will have this folder
-# (for example 'src') replaced by ${OBJS_PATH}.
-SRC_PATH 						:= 
-
-# Also you can add here more source files to build.
-#
-# This is intended for the case we have a bunch of source files,
-# with or without sub-folders, and want to add them to the build.
-#
-# The object paths of each one will be ${OBJS_PATH}/{SRCS.entry}
-MORE_SRCS 						:= 
-
-# The main source file, if any. If none, we assume this is a library.
-MAIN_SRC						:= 
-
-# Dependencies (Must have their own Makefile)
-DEPS							:= 
-
-# Header paths to include in headers search
-INCLUDE							:= 
-
-# Libs paths to include in libraries search
-LIBS_PATHS 						:= 
-
-# Dynamic libraries to link
-LIBS							:= 
-
-# Where to build things
-BUILD_PATH						:= build
-OBJS_PATH						:= obj
-
-# User flags for ar and both the C and the C++ compiler
-C_FLAGS							:= 
-CXX_FLAGS						:=
-AR_FLAGS						:=
-
-
-
-
+include Project.mk
 
 
 
@@ -301,25 +254,24 @@ ${LIBRARY}: ${BUILD_PATH} ${OBJS} ${MORE_OBJS}
 ifneq (${SRC_PATH},)
 # Builds the .cpp source files below SRC_PATH
 ${OBJS_PATH}/%.o: ${SRC_PATH}/%.c ${OBJS_PATH}
-	$(info DEBUG: ${C} -c $< -o $@)
+	${C} -c $< -o $@ ${INCLUDE_FLAGS} ${C_FLAGS}
 
 
 # Builds the .cpp source files below SRC_PATH
 ${OBJS_PATH}/%.o: ${SRC_PATH}/%.cpp ${OBJS_PATH}
-	$(info DEBUG: ${CXX} -c $< -o $@ ${INCLUDE_FLAGS} ${CXX_FLAGS})
+	${CXX} -c $< -o $@ ${INCLUDE_FLAGS} ${CXX_FLAGS}
 endif
 
 
 # Builds the .c source files added in MORE_SRCS}
 ${OBJS_PATH}/%.o: %.c ${OBJS_PATH}
-#	$(info DEBUG: ${C} -c $^ -o $@ ${INCLUDE_FLAGS} ${C_FLAGS})
 	${C} -c $< -o $@ ${INCLUDE_FLAGS} ${C_FLAGS}
 
 
 # Builds the .cpp source files added in MORE_SRCS}
 ${OBJS_PATH}/%.o: %.cpp ${OBJS_PATH}
-#	$(info DEBUG: ${CXX} -c $^ -o $@ ${INCLUDE_FLAGS} ${CXX_FLAGS})
 	${CXX} -c $< -o $@ ${INCLUDE_FLAGS} ${CXX_FLAGS}
+
 
 # What to build
 /tmp/touched: # What is needed
@@ -361,8 +313,7 @@ info:
 
 	$(info LIBS: ${LIBS})
 	$(info LINK_FLAGS: ${LINK_FLAGS})
-	
-	$(info DEPS: ${DEPS})
+
 
 run:
 	chmod +x "${EXEC}"
