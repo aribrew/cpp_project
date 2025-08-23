@@ -243,9 +243,8 @@ ifneq (${MORE_SRCS},)
 endif
 
 INCLUDE_FLAGS					:= $(call INCLUDE_FLAGS_FROM,${INCLUDE})
-
-LINK_FLAGS						:= $(call LIBS_PATHS_FLAGS_FROM,${LIBS_PATHS})
-LINK_FLAGS						+= $(call LIBS_FLAGS_FROM,${LIBS})
+LINK_PATHS_FLAGS				:= $(call LIBS_PATHS_FLAGS_FROM,${LIBS_PATHS})
+LINK_FLAGS						:= $(call LIBS_FLAGS_FROM,${LIBS})
 
 C_FLAGS 						:= ${C_CXX_FLAGS} ${C_FLAGS}
 CXX_FLAGS 						:= ${C_CXX_FLAGS} ${CXX_FLAGS}
@@ -287,10 +286,10 @@ endif
 ${EXEC}: ${BUILD_PATH} ${MAIN_OBJ} ${OBJS} ${MORE_OBJS}
 ifeq ($(suffix ${MAIN_SRC}),.c)
 	${C} ${OBJS} ${MORE_OBJS} ${MAIN_OBJ} \
-		 -o $@ ${LINK_FLAGS} ${C_FLAGS}
+		 -o $@ ${LINK_PATHS_FLAGS} ${LINK_FLAGS} ${C_FLAGS}
 else
 	${CXX} ${OBJS} ${MORE_OBJS} ${MAIN_OBJ} \
-		   -o $@ ${LINK_FLAGS} ${CXX_FLAGS}
+		   -o $@ ${LINK_PATHS_FLAGS} ${LINK_FLAGS} ${CXX_FLAGS}
 endif
 
 
@@ -358,8 +357,9 @@ info:
 	$(info INCLUDE_FLAGS: ${INCLUDE_FLAGS})
 
 	$(info LIBS_PATHS: ${LIBS_PATHS})
+	$(info LINK_PATHS_FLAGS: ${LINK_PATHS_FLAGS})
+
 	$(info LIBS: ${LIBS})
-	
 	$(info LINK_FLAGS: ${LINK_FLAGS})
 	
 	$(info DEPS: ${DEPS})
