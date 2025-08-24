@@ -1,14 +1,14 @@
 # If defined, the resulting binary will be named this.
 # Otherwise, it will be named as ${MAIN}.
 # So, if we have no main, THIS MUST BE SET.
-PROJECT_NAME					:= 
+PROJECT_NAME					:= HelloWorld
 
 # If set, this path will be seached for source files (excluding MAIN)
 # 
 # This is intended for the case we have a src folder with all the sources
 # below it. The object paths for each one will have this folder
 # (for example 'src') replaced by ${OBJS_PATH}.
-SRC_PATH 						:= 
+SRC_PATH 						:= src
 
 # Also you can add here more source files to build.
 #
@@ -22,7 +22,7 @@ MORE_SRCS 						:=
 #
 # You must put the full path to your main source file, because it may be
 # in SRC_PATH root or can be elsewhere...
-MAIN_SRC						:= 
+MAIN_SRC						:= ${SRC_PATH}/main.cpp
 
 # Header paths to include in headers search
 INCLUDE							:= 
